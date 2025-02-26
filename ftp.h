@@ -33,7 +33,6 @@ typedef struct command_s {
 void add_server_socket(struct pollfd *fds, int server_socket);
 int accept_new_client(int server_socket, client_t *clients,
     struct pollfd *fds, int *nfds);
-void remove_client(struct pollfd *fds, client_t *clients, int *nfds, int i);
 void process_client_message(struct pollfd *fds, client_t *clients,
     int *nfds, int i);
 
