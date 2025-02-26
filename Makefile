@@ -6,7 +6,7 @@
 ##
 
 SRC	=	ftp.c \
-		HandleClients.c
+		handle_clients.c
 
 OBJ	=	$(SRC:.c=.o)
 
