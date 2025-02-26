@@ -18,11 +18,14 @@ void print_help(void)
 void init_server(int *server_socket, struct sockaddr_in *server_addr,
     char *port)
 {
+    int opt = 1;
+
     *server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (*server_socket == -1) {
         perror("socket");
         exit(1);
     }
+    setsockopt(*server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     server_addr->sin_family = AF_INET;
     server_addr->sin_addr.s_addr = INADDR_ANY;
     server_addr->sin_port = htons(atoi(port));

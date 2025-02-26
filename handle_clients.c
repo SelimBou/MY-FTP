@@ -83,11 +83,12 @@ void check_command(const char *buffer, command_t *cmd)
 void process_client_message(struct pollfd *fds, client_t *clients,
     int *nfds, int i)
 {
+    int bytes_received;
     char buffer[BUFFER_SIZE];
-    int bytes_received = read(fds[i].fd, buffer, BUFFER_SIZE - 1);
     command_t cmd = {fds, clients, nfds, i};
 
     memset(buffer, 0, BUFFER_SIZE);
+    bytes_received = read(fds[i].fd, buffer, BUFFER_SIZE - 1);
     if (bytes_received <= 0) {
         remove_client(fds, clients, nfds, i);
         return;
