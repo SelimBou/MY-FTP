@@ -1,5 +1,6 @@
 {
   "files.associations": {
-    "client.C": "cpp"
+    "client.C": "cpp",
+    "ftp.h": "c"
   }
 }

@@ -77,7 +77,7 @@ static void pass_handling(const char *buffer, command_t *cmd)
     handle_standard_login(cmd, password);
 }
 
-static void trim_newline(char *buffer)
+void trim_newline(char *buffer)
 {
     char *pos = strpbrk(buffer, "\r\n");
 
@@ -89,23 +89,24 @@ static void trim_newline(char *buffer)
 void check_command(char *buffer, command_t *cmd)
 {
     trim_newline(buffer);
-    if (strncasecmp(buffer, "USER", 4) == 0 &&
-        (buffer[4] == ' ' || buffer[4] == '\0')) {
+    if (is_valid_command(buffer, "USER", 4)) {
         user_handling(buffer, cmd);
         return;
     }
-    if (strncasecmp(buffer, "PASS", 4) == 0 &&
-        (buffer[4] == ' ' || buffer[4] == '\0')) {
+    if (is_valid_command(buffer, "PASS", 4)) {
         pass_handling(buffer, cmd);
         return;
     }
-    if (strncasecmp(buffer, "QUIT", 4) == 0 &&
-        (buffer[4] == ' ' || buffer[4] == '\0')) {
+    if (is_valid_command(buffer, "QUIT", 4)) {
         write(cmd->fds[cmd->i].fd, "221 Goodbye.\r\n", 15);
         remove_client(cmd->fds, cmd->clients, cmd->nfds, cmd->i);
         return;
     }
-    write(cmd->fds[cmd->i].fd, "500 Commande non reconnue\r\n", 27);
+    if (is_valid_command(buffer, "CWD", 3)) {
+        cwd_handling(buffer, cmd);
+        return;
+    }
+    check_command_2(buffer, cmd);
 }
 
 void process_client_message(struct pollfd *fds, client_t *clients,

@@ -49,3 +49,31 @@ void user_handling(const char *buffer, command_t *cmd)
     cmd->clients[cmd->i].username[BUFFER_SIZE - 1] = '\0';
     write(cmd->fds[cmd->i].fd, "331 User name okay, need password.\r\n", 36);
 }
+
+void cwd_handling(const char *buffer, command_t *cmd)
+{
+    const char *path = buffer + 4;
+
+    while (*path == ' ') {
+        path++;
+    }
+    if (*path == '\0') {
+        write(cmd->fds[cmd->i].fd, "501 Syntax error in parameters.\r\n", 33);
+        return;
+    }
+    if (chdir(path) == 0) {
+        write(cmd->fds[cmd->i].fd,
+            "250 Requested file action okay, completed.\r\n", 44);
+    } else {
+        write(cmd->fds[cmd->i].fd, "550 Failed to change directory.\r\n", 34);
+    }
+}
+
+void cdup_handling(command_t *cmd)
+{
+    if (chdir("..") == 0) {
+        write(cmd->fds[cmd->i].fd, "200 Command okay.\r\n", 19);
+    } else {
+        write(cmd->fds[cmd->i].fd, "550 Failed to change directory.\r\n", 34);
+    }
+}

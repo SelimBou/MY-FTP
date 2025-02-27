@@ -15,8 +15,11 @@
     #include <arpa/inet.h>
     #include <stdio.h>
     #include <stdlib.h>
+    #include <stdbool.h>
     #include <string.h>
     #include <poll.h>
+    #include <unistd.h>
+    #include <limits.h>
 
 typedef struct client {
     int fd;
@@ -42,4 +45,12 @@ void user_handling(const char *buffer, command_t *cmd);
 void handle_standard_login(command_t *cmd, const char *password);
 void handle_anonymous_login(command_t *cmd, const char *password);
 
+void cdup_handling(command_t *cmd);
+void cwd_handling(const char *buffer, command_t *cmd);
+void check_command(char *buffer, command_t *cmd);
+bool is_valid_command(const char *buffer, const char *cmd, int len);
+void check_command_2(char *buffer, command_t *cmd);
+void handle_anonymous_login(command_t *cmd, const char *password);
+void handle_standard_login(command_t *cmd, const char *password);
+void user_handling(const char *buffer, command_t *cmd);
 #endif
