@@ -56,24 +56,52 @@ static void remove_client(struct pollfd *fds, client_t *clients,
     (*nfds)--;
 }
 
-void check_command(const char *buffer, command_t *cmd)
+static void pass_handling(const char *buffer, command_t *cmd)
 {
-    if (strncmp(buffer, "USER Anonymous", 14) == 0) {
-        write(cmd->fds[cmd->i].fd,
-            "331 User name okay, need password.\r\n", 36);
+    const char *password = buffer + 4;
+
+    if (cmd->clients[cmd->i].username[0] == '\0') {
+        write(cmd->fds[cmd->i].fd, "530 Login with USER first.\r\n", 28);
         return;
     }
-    if (strncmp(buffer, "PASS", 4) == 0) {
-        if (strlen(buffer) == 6) {
-            cmd->clients[cmd->i].is_authenticated = 1;
-            write(cmd->fds[cmd->i].fd, "230 User logged in, proceed.\r\n", 30);
-        } else {
-            write(cmd->fds[cmd->i].fd, "530 Login incorrect.\r\n", 22);
-        }
+    if (cmd->clients[cmd->i].is_authenticated) {
+        write(cmd->fds[cmd->i].fd, "530 User already connected.\r\n", 30);
         return;
     }
-    if (strncmp(buffer, "QUIT", 4) == 0) {
-        write(cmd->fds[cmd->i].fd, "221 Goodbye.\r\n", 13);
+    while (*password == ' ')
+        password++;
+    if (strcmp(cmd->clients[cmd->i].username, "Anonymous") == 0) {
+        handle_anonymous_login(cmd, password);
+        return;
+    }
+    handle_standard_login(cmd, password);
+}
+
+static void trim_newline(char *buffer)
+{
+    char *pos = strpbrk(buffer, "\r\n");
+
+    if (pos) {
+        *pos = '\0';
+    }
+}
+
+void check_command(char *buffer, command_t *cmd)
+{
+    trim_newline(buffer);
+    if (strncasecmp(buffer, "USER", 4) == 0 &&
+        (buffer[4] == ' ' || buffer[4] == '\0')) {
+        user_handling(buffer, cmd);
+        return;
+    }
+    if (strncasecmp(buffer, "PASS", 4) == 0 &&
+        (buffer[4] == ' ' || buffer[4] == '\0')) {
+        pass_handling(buffer, cmd);
+        return;
+    }
+    if (strncasecmp(buffer, "QUIT", 4) == 0 &&
+        (buffer[4] == ' ' || buffer[4] == '\0')) {
+        write(cmd->fds[cmd->i].fd, "221 Goodbye.\r\n", 15);
         remove_client(cmd->fds, cmd->clients, cmd->nfds, cmd->i);
         return;
     }

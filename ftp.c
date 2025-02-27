@@ -47,7 +47,7 @@ static void check_client_activity(struct pollfd *fds, client_t *clients,
     }
 }
 
-void handle_clients(int server_socket)
+void handle_clients(int server_socket, char *path)
 {
     struct pollfd fds[MAX_CLIENTS + 1];
     client_t clients[MAX_CLIENTS + 1];
@@ -63,13 +63,13 @@ void handle_clients(int server_socket)
     }
 }
 
-void my_ftp(char *port)
+void my_ftp(char *port, char *path)
 {
     int server_socket;
     struct sockaddr_in server_addr;
 
     init_server(&server_socket, &server_addr, port);
-    handle_clients(server_socket);
+    handle_clients(server_socket, path);
     close(server_socket);
 }
 
@@ -79,10 +79,10 @@ int main(int argc, char **argv)
         print_help();
         return 0;
     }
-    if (argc == 2) {
-        my_ftp(argv[1]);
-        return 0;
-    } else {
+    if (argc != 3) {
+        print_help();
         return 84;
     }
+    my_ftp(argv[1], argv[2]);
+    return 0;
 }

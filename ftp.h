@@ -21,6 +21,8 @@
 typedef struct client {
     int fd;
     int is_authenticated;
+    char cwd[BUFFER_SIZE];
+    char username[BUFFER_SIZE];
 } client_t;
 
 typedef struct command_s {
@@ -36,5 +38,8 @@ int accept_new_client(int server_socket, client_t *clients,
 void process_client_message(struct pollfd *fds, client_t *clients,
     int *nfds, int i);
 
+void user_handling(const char *buffer, command_t *cmd);
+void handle_standard_login(command_t *cmd, const char *password);
+void handle_anonymous_login(command_t *cmd, const char *password);
 
 #endif
