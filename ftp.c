@@ -48,7 +48,9 @@ static void check_client_activity(struct pollfd *fds, client_t *clients,
             cmd.clients = clients;
             cmd.nfds = nfds;
             cmd.i = i;
-            process_client_message(&cmd, path);
+            strncpy(cmd.path, path, PATH_MAX - 1);
+            cmd.path[PATH_MAX - 1] = '\0';
+            process_client_message(&cmd);
         }
     }
 }

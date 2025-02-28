@@ -36,23 +36,30 @@ typedef struct command_s {
     client_t *clients;
     int *nfds;
     int i;
+    char buffer[BUFFER_SIZE];
+    char path[PATH_MAX];
 } command_t;
+
+typedef void (*command_handler_t)(command_t *);
+
+typedef struct {
+    char *command;
+    command_handler_t handler;
+} command_entry_t;
 
 void add_server_socket(struct pollfd *fds, int server_socket);
 int accept_new_client(int server_socket, client_t *clients,
     struct pollfd *fds, int *nfds);
-void process_client_message(command_t *cmd, char *path);
+void process_client_message(command_t *cmd);
 
-void user_handling(const char *buffer, command_t *cmd);
-void handle_standard_login(command_t *cmd, const char *password);
-void handle_anonymous_login(command_t *cmd, const char *password);
+void user_handling(command_t *cmd);
+void pass_handling(command_t *cmd);
+void noop_handling(command_t *cmd);
+void help_handling(command_t *cmd);
+void cdup_handling(command_t *cmd);
+void cwd_handling(command_t *cmd);
+void pwd_handling(command_t *cmd);
 
-void cdup_handling(command_t *cmd, char *path);
-void cwd_handling(const char *buffer, command_t *cmd, char *path);
-void check_command(char *buffer, command_t *cmd);
 bool is_valid_command(const char *buffer, const char *cmd, int len);
-void check_command_2(char *buffer, command_t *cmd, char *path);
-void handle_anonymous_login(command_t *cmd, const char *password);
-void handle_standard_login(command_t *cmd, const char *password);
-void user_handling(const char *buffer, command_t *cmd);
+
 #endif
