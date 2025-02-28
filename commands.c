@@ -50,17 +50,40 @@ void user_handling(const char *buffer, command_t *cmd)
     write(cmd->fds[cmd->i].fd, "331 User name okay, need password.\r\n", 36);
 }
 
-void cwd_handling(const char *buffer, command_t *cmd)
+static int check_cwd_errors(command_t *cmd, char *path, char *current_path)
 {
-    const char *path = buffer + 4;
-
     while (*path == ' ') {
         path++;
     }
     if (*path == '\0') {
         write(cmd->fds[cmd->i].fd, "501 Syntax error in parameters.\r\n", 33);
-        return;
+        return -1;
     }
+    if (!getcwd(current_path, PATH_MAX)) {
+        write(cmd->fds[cmd->i].fd, "550 Retrieving directory failed.\r\n", 42);
+        return -1;
+    }
+    if (strcmp(current_path, path) == 0) {
+        write(cmd->fds[cmd->i].fd, "250 Already in the directory.\r\n", 42);
+        return -1;
+    }
+    if (strcmp(current_path, "/") == 0 && strcmp(path, "..") == 0) {
+        write(cmd->fds[cmd->i].fd, "550 Already at root directory.\r\n", 34);
+        return -1;
+    }
+    return 0;
+}
+
+void cwd_handling(const char *buffer, command_t *cmd, char *path)
+{
+    char current_path[PATH_MAX];
+
+    if (!cmd || !cmd->fds || !cmd->clients || !cmd->nfds || !path) {
+        write(2, "Erreur: paramètres invalides dans cwd_handling.\n", 50);
+        return -1;
+    }
+    if (check_cwd_errors(cmd, path, current_path) == -1)
+        return;
     if (chdir(path) == 0) {
         write(cmd->fds[cmd->i].fd,
             "250 Requested file action okay, completed.\r\n", 44);
@@ -69,8 +92,34 @@ void cwd_handling(const char *buffer, command_t *cmd)
     }
 }
 
-void cdup_handling(command_t *cmd)
+static int check_cdup_errors(command_t *cmd, char *path, char *current_path)
 {
+    if (!cmd || !cmd->fds || !cmd->clients || !cmd->nfds) {
+        write(2, "Erreur: paramètres invalides dans cdup_handling.\n", 50);
+        return -1;
+    }
+    if (!getcwd(current_path, PATH_MAX)) {
+        write(cmd->fds[cmd->i].fd, "550 Retrieving directory failed.\r\n", 42);
+        return -1;
+    }
+    if (strcmp(current_path, "/") == 0) {
+        write(cmd->fds[cmd->i].fd, "550 Already at root directory.\r\n", 34);
+        return -1;
+    }
+    if (path && strcmp(current_path, path) == 0) {
+        write(cmd->fds[cmd->i].fd,
+            "550 Cannot go above the initial root directory.\r\n", 48);
+        return -1;
+    }
+    return 0;
+}
+
+void cdup_handling(command_t *cmd, char *path)
+{
+    char current_path[PATH_MAX];
+
+    if (check_cdup_errors(cmd, path, current_path) == -1)
+        return;
     if (chdir("..") == 0) {
         write(cmd->fds[cmd->i].fd, "200 Command okay.\r\n", 19);
     } else {

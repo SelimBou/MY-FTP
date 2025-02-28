@@ -61,7 +61,7 @@ static void pass_handling(const char *buffer, command_t *cmd)
     const char *password = buffer + 4;
 
     if (cmd->clients[cmd->i].username[0] == '\0') {
-        write(cmd->fds[cmd->i].fd, "530 Login with USER first.\r\n", 28);
+        write(cmd->fds[cmd->i].fd, "503 Login with USER first.\r\n", 28);
         return;
     }
     if (cmd->clients[cmd->i].is_authenticated) {
@@ -86,7 +86,7 @@ void trim_newline(char *buffer)
     }
 }
 
-void check_command(char *buffer, command_t *cmd)
+void check_command(char *buffer, command_t *cmd, char *path)
 {
     trim_newline(buffer);
     if (is_valid_command(buffer, "USER", 4)) {
@@ -102,26 +102,25 @@ void check_command(char *buffer, command_t *cmd)
         remove_client(cmd->fds, cmd->clients, cmd->nfds, cmd->i);
         return;
     }
-    if (is_valid_command(buffer, "CWD", 3)) {
-        cwd_handling(buffer, cmd);
+    if (!cmd->clients[cmd->i].is_authenticated) {
+        write(cmd->fds[cmd->i].fd, "530 Please login with USER and PASS.\r\n",
+            19);
         return;
     }
-    check_command_2(buffer, cmd);
+    check_command_2(buffer, cmd, path);
 }
 
-void process_client_message(struct pollfd *fds, client_t *clients,
-    int *nfds, int i)
+void process_client_message(command_t *cmd, char *path)
 {
     int bytes_received;
     char buffer[BUFFER_SIZE];
-    command_t cmd = {fds, clients, nfds, i};
 
     memset(buffer, 0, BUFFER_SIZE);
-    bytes_received = read(fds[i].fd, buffer, BUFFER_SIZE - 1);
+    bytes_received = read(cmd->fds[cmd->i].fd, buffer, BUFFER_SIZE - 1);
     if (bytes_received <= 0) {
-        remove_client(fds, clients, nfds, i);
+        remove_client(cmd->fds, cmd->clients, cmd->nfds, cmd->i);
         return;
     }
     printf("Message reçu : %s", buffer);
-    check_command(buffer, &cmd);
+    check_command(buffer, cmd, path);
 }

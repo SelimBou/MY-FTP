@@ -38,11 +38,17 @@ void init_server(int *server_socket, struct sockaddr_in *server_addr,
 }
 
 static void check_client_activity(struct pollfd *fds, client_t *clients,
-    int *nfds)
+    int *nfds, char *path)
 {
+    command_t cmd;
+
     for (int i = 1; i < *nfds; i++) {
         if (fds[i].revents & POLLIN) {
-            process_client_message(fds, clients, nfds, i);
+            cmd.fds = fds;
+            cmd.clients = clients;
+            cmd.nfds = nfds;
+            cmd.i = i;
+            process_client_message(&cmd, path);
         }
     }
 }
@@ -59,7 +65,7 @@ void handle_clients(int server_socket, char *path)
         if (fds[0].revents & POLLIN) {
             accept_new_client(server_socket, clients, fds, &nfds);
         }
-        check_client_activity(fds, clients, &nfds);
+        check_client_activity(fds, clients, &nfds, path);
     }
 }
 
