@@ -7,9 +7,9 @@
 
 #include "ftp.h"
 
-static void handle_anonymous_login(command_t *cmd)
+static void handle_anonymous_login(command_t *cmd, char *buffer_ptr)
 {
-    if (*(cmd->buffer) != '\0') {
+    if (*buffer_ptr != '\0') {
         write(cmd->fds[cmd->i].fd,
             "530 Invalid password for Anonymous.\r\n", 37);
         return;
@@ -18,20 +18,23 @@ static void handle_anonymous_login(command_t *cmd)
     write(cmd->fds[cmd->i].fd, "230 User logged in, proceed.\r\n", 30);
 }
 
-static void handle_standard_login(command_t *cmd)
+static void handle_standard_login(command_t *cmd, char *buffer_ptr)
 {
-    if (*(cmd->buffer) == '\0') {
+    if (*buffer_ptr == '\0') {
         write(cmd->fds[cmd->i].fd, "530 Usage: PASS <password>\r\n", 29);
         return;
     }
-    cmd->clients[cmd->i].is_authenticated = 1;
-    write(cmd->fds[cmd->i].fd, "230 User logged in, proceed.\r\n", 30);
+    write(cmd->fds[cmd->i].fd, "530 Incorrect pwd.\r\n", 21);
 }
 
 void pass_handling(command_t *cmd)
 {
     char *buffer_ptr = cmd->buffer;
 
+    while (*buffer_ptr && !isspace(*buffer_ptr))
+        buffer_ptr++;
+    while (*buffer_ptr && isspace(*buffer_ptr))
+        buffer_ptr++;
     if (cmd->clients[cmd->i].username[0] == '\0') {
         write(cmd->fds[cmd->i].fd, "503 Login with USER first.\r\n", 28);
         return;
@@ -40,18 +43,16 @@ void pass_handling(command_t *cmd)
         write(cmd->fds[cmd->i].fd, "530 User already connected.\r\n", 30);
         return;
     }
-    while (*buffer_ptr == ' ')
-        buffer_ptr++;
     if (strcmp(cmd->clients[cmd->i].username, "Anonymous") == 0) {
-        handle_anonymous_login(cmd);
+        handle_anonymous_login(cmd, buffer_ptr);
         return;
     }
-    handle_standard_login(cmd);
+    handle_standard_login(cmd, buffer_ptr);
 }
 
 void user_handling(command_t *cmd)
 {
-    char *args = cmd->buffer;
+    char *args = cmd->buffer + 4;
     char *space;
 
     while (*args == ' ')
@@ -62,10 +63,13 @@ void user_handling(command_t *cmd)
     }
     strncpy(cmd->clients[cmd->i].username, args, BUFFER_SIZE - 1);
     cmd->clients[cmd->i].username[BUFFER_SIZE - 1] = '\0';
+    space = strchr(cmd->clients[cmd->i].username, '\n');
+    if (space)
+        *space = '\0';
     space = strchr(cmd->clients[cmd->i].username, ' ');
     if (space)
         *space = '\0';
-    write(cmd->fds[cmd->i].fd, "331 User name okay, need password.\r\n", 36);
+    write(cmd->fds[cmd->i].fd, "331 User name okay, need password.\r\n", 37);
 }
 
 void cdup_handling(command_t *cmd)

@@ -106,7 +106,7 @@ static void check_command(command_t *cmd)
             return;
         }
     }
-    write(cmd->fds[cmd->i].fd, "500 Commande non reconnue\r\n", 27);
+    write(cmd->fds[cmd->i].fd, "500 Commande non reconnue\r\n", 28);
 }
 
 void process_client_message(command_t *cmd)

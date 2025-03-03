@@ -11,6 +11,7 @@
     #define BUFFER_SIZE 1024
     #define PATH_MAX 4096
     #include <netinet/in.h>
+    #include <ctype.h>
     #include <sys/socket.h>
     #include <unistd.h>
     #include <arpa/inet.h>
