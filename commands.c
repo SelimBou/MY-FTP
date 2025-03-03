@@ -109,7 +109,7 @@ void cwd_handling(command_t *cmd)
         return send_error_response(cmd->fds[cmd->i].fd,
             "250 Already in the directory.\r\n");
     if (chdir(buffer_ptr) == 0) {
-        write(cmd->fds[cmd->i].fd, "250 Requested action completed.\r\n", 45);
+        write(cmd->fds[cmd->i].fd, "250 Requested action completed.\r\n", 34);
     } else {
         return send_error_response(cmd->fds[cmd->i].fd,
             "550 Failed to change directory.\r\n");

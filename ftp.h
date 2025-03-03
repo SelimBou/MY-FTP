@@ -7,7 +7,7 @@
 
 #ifndef FTP_H_
     #define FTP_H_
-    #define MAX_CLIENTS 10
+    #define MAX_CLIENTS 150
     #define BUFFER_SIZE 1024
     #define PATH_MAX 4096
     #include <netinet/in.h>
