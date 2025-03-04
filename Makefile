@@ -8,7 +8,7 @@
 SRC	=	ftp.c \
 		handle_clients.c \
 		commands.c \
-		check_command.c
+		commands_part_2.c
 
 OBJ	=	$(SRC:.c=.o)
 

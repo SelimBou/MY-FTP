@@ -7,12 +7,6 @@
 
 #include "ftp.h"
 
-bool is_valid_command(const char *buffer, const char *cmd, int len)
-{
-    return (strncasecmp(buffer, cmd, len) == 0 &&
-            (buffer[len] == ' ' || buffer[len] == '\0'));
-}
-
 void noop_handling(command_t *cmd)
 {
     write(cmd->fds[cmd->i].fd, "200 NOOP command okay.\r\n", 24);
@@ -64,4 +58,30 @@ void list_handling(command_t *cmd)
         write(cmd->fds[cmd->i].fd, "\n", 1);
     }
     write(cmd->fds[cmd->i].fd, "226 Directory send OK.\r\n", 24);
+}
+
+void retr_handling(command_t *cmd)
+{
+    char *args = cmd->buffer + 4;
+    int file_fd;
+    char buffer[BUFFER_SIZE];
+    ssize_t bytes_read;
+
+    while (*args == ' ')
+        args++;
+    if (*args == '\0') {
+        write(cmd->fds[cmd->i].fd, "501 Syntax error in parameters.\r\n", 33);
+        return;
+    }
+    file_fd = open(args, O_RDONLY);
+    if (file_fd < 0) {
+        write(cmd->fds[cmd->i].fd, "550 File not found.\r\n", 22);
+        return;
+    }
+    write(cmd->fds[cmd->i].fd, "150 Opening data connection.\r\n", 30);
+    while ((bytes_read = read(file_fd, buffer, BUFFER_SIZE)) > 0) {
+        write(cmd->fds[cmd->i].fd, buffer, bytes_read);
+    }
+    close(file_fd);
+    write(cmd->fds[cmd->i].fd, "226 Transfer complete.\r\n", 24);
 }

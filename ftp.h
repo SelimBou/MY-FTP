@@ -16,6 +16,7 @@
     #include <unistd.h>
     #include <arpa/inet.h>
     #include <stdio.h>
+    #include <fcntl.h>
     #include <stdlib.h>
     #include <stdbool.h>
     #include <string.h>
@@ -61,7 +62,6 @@ void cdup_handling(command_t *cmd);
 void cwd_handling(command_t *cmd);
 void pwd_handling(command_t *cmd);
 void del_handling(command_t *cmd);
-
-bool is_valid_command(const char *buffer, const char *cmd, int len);
+void retr_handling(command_t *cmd);
 
 #endif
