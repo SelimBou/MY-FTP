@@ -68,7 +68,7 @@ static void trim_newline(char *buffer)
 
 void handle_quit(command_t *cmd)
 {
-    write(cmd->fds[cmd->i].fd, "221 Goodbye.\r\n", 15);
+    write(cmd->fds[cmd->i].fd, "221 Goodbye.\r\n", 14);
     remove_client(cmd->fds, cmd->clients, cmd->nfds, cmd->i);
 }
 
@@ -104,7 +104,7 @@ static void check_command(command_t *cmd)
         strncasecmp(cmd->buffer, "PASS", 4) != 0 &&
         strncasecmp(cmd->buffer, "QUIT", 4) != 0) {
         write(cmd->fds[cmd->i].fd,
-            "530 Please login with USER and PASS.\r\n", 39);
+            "530 Please login with USER and PASS.\r\n", 38);
         return;
     }
     for (int i = 0; commands[i].command != NULL; i++) {
@@ -114,7 +114,7 @@ static void check_command(command_t *cmd)
             return;
         }
     }
-    write(cmd->fds[cmd->i].fd, "500 Commande non reconnue\r\n", 28);
+    write(cmd->fds[cmd->i].fd, "500 Commande non reconnue\r\n", 27);
 }
 
 void process_client_message(command_t *cmd)

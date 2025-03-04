@@ -28,7 +28,7 @@ void del_handling(command_t *cmd)
         args++;
     if (*args == '\0') {
         write(cmd->fds[cmd->i].fd,
-            "501 Syntax error in parameters or arguments.\r\n", 45);
+            "501 Syntax error in parameters or arguments.\r\n", 46);
         return;
     }
     if (remove(args) == 0) {
@@ -47,7 +47,7 @@ void list_handling(command_t *cmd)
     if (!cmd->clients[cmd->i].dir) {
         cmd->clients[cmd->i].dir = opendir(cmd->clients[cmd->i].cwd);
         if (!cmd->clients[cmd->i].dir) {
-            write(cmd->fds[cmd->i].fd, "550 Failed to open directory\r\n", 31);
+            write(cmd->fds[cmd->i].fd, "550 Failed to open directory\r\n", 30);
             return;
         }
     }
@@ -86,7 +86,7 @@ void retr_handling(command_t *cmd)
     }
     file_fd = open(args, O_RDONLY);
     if (file_fd < 0) {
-        write(cmd->fds[cmd->i].fd, "550 File not found.\r\n", 22);
+        write(cmd->fds[cmd->i].fd, "550 File not found.\r\n", 21);
         return;
     }
     write(cmd->fds[cmd->i].fd, "150 Opening data connection.\r\n", 30);

@@ -21,10 +21,10 @@ static void handle_anonymous_login(command_t *cmd, char *buffer_ptr)
 static void handle_standard_login(command_t *cmd, char *buffer_ptr)
 {
     if (*buffer_ptr == '\0') {
-        write(cmd->fds[cmd->i].fd, "530 Usage: PASS <password>\r\n", 29);
+        write(cmd->fds[cmd->i].fd, "530 Usage: PASS <password>\r\n", 28);
         return;
     }
-    write(cmd->fds[cmd->i].fd, "530 Incorrect pwd.\r\n", 21);
+    write(cmd->fds[cmd->i].fd, "530 Incorrect pwd.\r\n", 20);
 }
 
 void pass_handling(command_t *cmd)
@@ -40,7 +40,7 @@ void pass_handling(command_t *cmd)
         return;
     }
     if (cmd->clients[cmd->i].is_authenticated) {
-        write(cmd->fds[cmd->i].fd, "530 User already connected.\r\n", 30);
+        write(cmd->fds[cmd->i].fd, "530 User already connected.\r\n", 29);
         return;
     }
     if (strcmp(cmd->clients[cmd->i].username, "Anonymous") == 0) {
@@ -58,7 +58,7 @@ void user_handling(command_t *cmd)
     while (*args == ' ')
         args++;
     if (*args == '\0') {
-        write(cmd->fds[cmd->i].fd, "530 Usage: USER <username>\r\n", 29);
+        write(cmd->fds[cmd->i].fd, "530 Usage: USER <username>\r\n", 28);
         return;
     }
     strncpy(cmd->clients[cmd->i].username, args, BUFFER_SIZE - 1);
@@ -69,7 +69,7 @@ void user_handling(command_t *cmd)
     space = strchr(cmd->clients[cmd->i].username, ' ');
     if (space)
         *space = '\0';
-    write(cmd->fds[cmd->i].fd, "331 User name okay, need password.\r\n", 37);
+    write(cmd->fds[cmd->i].fd, "331 User name okay, need password.\r\n", 36);
 }
 
 void cdup_handling(command_t *cmd)
@@ -77,17 +77,17 @@ void cdup_handling(command_t *cmd)
     char current_path[PATH_MAX];
 
     if (!getcwd(current_path, PATH_MAX)) {
-        write(cmd->fds[cmd->i].fd, "550 Retrieving directory failed.\r\n", 35);
+        write(cmd->fds[cmd->i].fd, "550 Retrieving directory failed.\r\n", 34);
         return;
     }
     if (strcmp(current_path, "/") == 0) {
-        write(cmd->fds[cmd->i].fd, "550 Already at root directory.\r\n", 33);
+        write(cmd->fds[cmd->i].fd, "550 Already at root directory.\r\n", 32);
         return;
     }
     if (chdir("..") == 0) {
         write(cmd->fds[cmd->i].fd, "200 Command okay.\r\n", 19);
     } else {
-        write(cmd->fds[cmd->i].fd, "550 Failed to change directory.\r\n", 34);
+        write(cmd->fds[cmd->i].fd, "550 Failed to change directory.\r\n", 33);
     }
 }
 
@@ -113,7 +113,7 @@ void cwd_handling(command_t *cmd)
         return send_error_response(cmd->fds[cmd->i].fd,
             "250 Already in the directory.\r\n");
     if (chdir(buffer_ptr) == 0) {
-        write(cmd->fds[cmd->i].fd, "250 Requested action completed.\r\n", 34);
+        write(cmd->fds[cmd->i].fd, "250 Requested action completed.\r\n", 33);
     } else {
         return send_error_response(cmd->fds[cmd->i].fd,
             "550 Failed to change directory.\r\n");
@@ -126,7 +126,7 @@ void pwd_handling(command_t *cmd)
 
     if (!getcwd(current_path, sizeof(current_path))) {
         write(cmd->fds[cmd->i].fd,
-            "550 Failed to retrieve current directory.\r\n", 44);
+            "550 Failed to retrieve current directory.\r\n", 43);
         return;
     }
     write(cmd->fds[cmd->i].fd, "257 \"", 5);
