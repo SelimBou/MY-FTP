@@ -26,7 +26,6 @@ void del_handling(command_t *cmd)
 
     while (*args == ' ')
         args++;
-
     if (*args == '\0') {
         write(cmd->fds[cmd->i].fd,
             "501 Syntax error in parameters or arguments.\r\n", 45);
@@ -48,24 +47,36 @@ void list_handling(command_t *cmd)
     if (!cmd->clients[cmd->i].dir) {
         cmd->clients[cmd->i].dir = opendir(cmd->clients[cmd->i].cwd);
         if (!cmd->clients[cmd->i].dir) {
-            write(cmd->fds[cmd->i].fd, "550 Failed to open directory.\r\n", 31);
+            write(cmd->fds[cmd->i].fd, "550 Failed to open directory\r\n", 31);
             return;
         }
     }
-    write(cmd->fds[cmd->i].fd, "150 Here comes the directory listing.\r\n", 38);
-    while ((entry = readdir(cmd->clients[cmd->i].dir)) != NULL) {
+    write(cmd->fds[cmd->i].fd, "150 Here comes the directory listing\r\n", 38);
+    entry = readdir(cmd->clients[cmd->i].dir);
+    while (entry != NULL) {
         write(cmd->fds[cmd->i].fd, entry->d_name, strlen(entry->d_name));
         write(cmd->fds[cmd->i].fd, "\n", 1);
+        entry = readdir(cmd->clients[cmd->i].dir);
     }
     write(cmd->fds[cmd->i].fd, "226 Directory send OK.\r\n", 24);
+}
+
+static void send_file(command_t *cmd, int file_fd)
+{
+    char buffer[BUFFER_SIZE];
+    ssize_t bytes_read;
+
+    bytes_read = read(file_fd, buffer, BUFFER_SIZE);
+    while (bytes_read > 0) {
+        write(cmd->fds[cmd->i].fd, buffer, bytes_read);
+        bytes_read = read(file_fd, buffer, BUFFER_SIZE);
+    }
 }
 
 void retr_handling(command_t *cmd)
 {
     char *args = cmd->buffer + 4;
     int file_fd;
-    char buffer[BUFFER_SIZE];
-    ssize_t bytes_read;
 
     while (*args == ' ')
         args++;
@@ -79,9 +90,7 @@ void retr_handling(command_t *cmd)
         return;
     }
     write(cmd->fds[cmd->i].fd, "150 Opening data connection.\r\n", 30);
-    while ((bytes_read = read(file_fd, buffer, BUFFER_SIZE)) > 0) {
-        write(cmd->fds[cmd->i].fd, buffer, bytes_read);
-    }
+    send_file(cmd, file_fd);
     close(file_fd);
     write(cmd->fds[cmd->i].fd, "226 Transfer complete.\r\n", 24);
 }
