@@ -60,6 +60,7 @@ void help_handling(command_t *cmd);
 void cdup_handling(command_t *cmd);
 void cwd_handling(command_t *cmd);
 void pwd_handling(command_t *cmd);
+void del_handling(command_t *cmd);
 
 bool is_valid_command(const char *buffer, const char *cmd, int len);
 

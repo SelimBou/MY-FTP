@@ -82,7 +82,8 @@ void init_commands(command_entry_t *commands)
     commands[5] = (command_entry_t){"NOOP", noop_handling};
     commands[6] = (command_entry_t){"HELP", help_handling};
     commands[7] = (command_entry_t){"PWD", pwd_handling};
-    commands[8] = (command_entry_t){NULL, NULL};
+    commands[8] = (command_entry_t){"DELE", del_handling};
+    commands[9] = (command_entry_t){NULL, NULL};
 }
 
 static void check_command(command_t *cmd)
