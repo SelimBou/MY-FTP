@@ -25,11 +25,19 @@
     #include <limits.h>
     #include <dirent.h>
 
+
+typedef struct {
+    int data_socket;
+    int port;
+    bool is_active;
+} pasv_connection_t;
+
 typedef struct client {
     int fd;
     int is_authenticated;
     char cwd[BUFFER_SIZE];
     char username[BUFFER_SIZE];
+    pasv_connection_t pasv_conn;
     DIR *dir;
 } client_t;
 
@@ -61,6 +69,7 @@ void help_handling(command_t *cmd);
 void cdup_handling(command_t *cmd);
 void cwd_handling(command_t *cmd);
 void pwd_handling(command_t *cmd);
+void pasv_handling(command_t *cmd);
 void del_handling(command_t *cmd);
 void retr_handling(command_t *cmd);
 

@@ -1,0 +1,8 @@
+./client.c:1: MINOR:C-G1
+./client.c:13: MINOR:C-L6
+./client.c:16: MAJOR:C-F3
+./client.c:17: MINOR:C-L6
+./client.c:18: MAJOR:C-L5
+./client.c:19: MAJOR:C-L5
+./client.c:20: MINOR:C-L6
+./client.c:28: MINOR:C-L6

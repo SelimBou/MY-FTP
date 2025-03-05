@@ -40,57 +40,100 @@ void del_handling(command_t *cmd)
     }
 }
 
-void list_handling(command_t *cmd)
+static int accept_data_connection(command_t *cmd)
 {
-    struct dirent *entry;
+    struct sockaddr_in client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+    int data_socket = accept(cmd->clients[cmd->i].pasv_conn.data_socket,
+        (struct sockaddr*)&client_addr, &addr_len);
 
-    if (!cmd->clients[cmd->i].dir) {
-        cmd->clients[cmd->i].dir = opendir(cmd->clients[cmd->i].cwd);
-        if (!cmd->clients[cmd->i].dir) {
-            write(cmd->fds[cmd->i].fd, "550 Failed to open directory\r\n", 30);
-            return;
-        }
+    if (!cmd->clients[cmd->i].pasv_conn.is_active) {
+        write(cmd->fds[cmd->i].fd, "425 Use PASV first.\r\n", 21);
+        return -1;
     }
-    write(cmd->fds[cmd->i].fd, "150 Here comes the directory listing\r\n", 38);
-    entry = readdir(cmd->clients[cmd->i].dir);
-    while (entry != NULL) {
-        write(cmd->fds[cmd->i].fd, entry->d_name, strlen(entry->d_name));
-        write(cmd->fds[cmd->i].fd, "\n", 1);
-        entry = readdir(cmd->clients[cmd->i].dir);
+    if (data_socket < 0) {
+        write(cmd->fds[cmd->i].fd, "425 Can't open data connection.\r\n", 33);
+        return -1;
     }
-    write(cmd->fds[cmd->i].fd, "226 Directory send OK.\r\n", 24);
+    return data_socket;
 }
 
-static void send_file(command_t *cmd, int file_fd)
+static void send_directory_listing(command_t *cmd, int data_socket)
 {
+    struct dirent *entry = readdir(opendir(cmd->clients[cmd->i].cwd));
+    char file_info[1024];
+
+    while (entry != NULL) {
+        snprintf(file_info, sizeof(file_info), "%s\r\n", entry->d_name);
+        write(data_socket, file_info, strlen(file_info));
+        entry = readdir(cmd->clients[cmd->i].cwd);
+    }
+}
+
+void list_handling(command_t *cmd)
+{
+    int data_socket = accept_data_connection(cmd);
+
+    if (data_socket < 0) {
+        return;
+    }
+    write(cmd->fds[cmd->i].fd, "150 Here comes the directory listing\r\n", 38);
+    send_directory_listing(cmd, data_socket);
+    close(data_socket);
+    write(cmd->fds[cmd->i].fd, "226 Directory send OK.\r\n", 24);
+    close(cmd->clients[cmd->i].pasv_conn.data_socket);
+    cmd->clients[cmd->i].pasv_conn.is_active = false;
+}
+
+static int validate_retr_arguments(command_t *cmd, char **args)
+{
+    int data_socket;
+
+    *args = cmd->buffer + 4;
+    if (!cmd->clients[cmd->i].pasv_conn.is_active) {
+        write(cmd->fds[cmd->i].fd, "425 Use PASV first.\r\n", 21);
+        return -1;
+    }
+    while (**args == ' ')
+        (*args)++;
+    if (**args == '\0') {
+        write(cmd->fds[cmd->i].fd, "501 Syntax error in parameters.\r\n", 33);
+        return -1;
+    }
+    return data_socket;
+}
+
+static void send_file_content(command_t *cmd, int data_socket, char *args)
+{
+    int file_fd = open(args, O_RDONLY);
     char buffer[BUFFER_SIZE];
     ssize_t bytes_read;
 
+    if (file_fd < 0) {
+        write(cmd->fds[cmd->i].fd, "550 File not found.\r\n", 21);
+        close(data_socket);
+        return;
+    }
+    write(cmd->fds[cmd->i].fd, "150 Opening data connection.\r\n", 30);
     bytes_read = read(file_fd, buffer, BUFFER_SIZE);
     while (bytes_read > 0) {
-        write(cmd->fds[cmd->i].fd, buffer, bytes_read);
+        write(data_socket, buffer, bytes_read);
         bytes_read = read(file_fd, buffer, BUFFER_SIZE);
     }
+    close(file_fd);
+    close(data_socket);
+    write(cmd->fds[cmd->i].fd, "226 Transfer complete.\r\n", 24);
 }
 
 void retr_handling(command_t *cmd)
 {
-    char *args = cmd->buffer + 4;
-    int file_fd;
+    char *args;
+    int data_socket = validate_retr_arguments(cmd, &args);
 
-    while (*args == ' ')
-        args++;
-    if (*args == '\0') {
-        write(cmd->fds[cmd->i].fd, "501 Syntax error in parameters.\r\n", 33);
+    if (data_socket < 0) {
         return;
     }
-    file_fd = open(args, O_RDONLY);
-    if (file_fd < 0) {
-        write(cmd->fds[cmd->i].fd, "550 File not found.\r\n", 21);
-        return;
-    }
-    write(cmd->fds[cmd->i].fd, "150 Opening data connection.\r\n", 30);
-    send_file(cmd, file_fd);
-    close(file_fd);
-    write(cmd->fds[cmd->i].fd, "226 Transfer complete.\r\n", 24);
+    send_file_content(cmd, data_socket, args);
+    close(cmd->clients[cmd->i].pasv_conn.data_socket);
+    cmd->clients[cmd->i].pasv_conn.is_active = false;
 }

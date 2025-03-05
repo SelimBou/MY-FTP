@@ -84,7 +84,8 @@ void init_commands(command_entry_t *commands)
     commands[7] = (command_entry_t){"PWD", pwd_handling};
     commands[8] = (command_entry_t){"DELE", del_handling};
     commands[9] = (command_entry_t){"RETR", retr_handling};
-    commands[10] = (command_entry_t){NULL, NULL};
+    commands[10] = (command_entry_t){"PASV", pasv_handling};
+    commands[11] = (command_entry_t){NULL, NULL};
 }
 
 static bool is_valid_command(const char *buffer, const char *cmd, int len)
@@ -95,7 +96,7 @@ static bool is_valid_command(const char *buffer, const char *cmd, int len)
 
 static void check_command(command_t *cmd)
 {
-    command_entry_t commands[11];
+    command_entry_t commands[12];
 
     trim_newline(cmd->buffer);
     init_commands(commands);
