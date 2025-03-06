@@ -72,5 +72,7 @@ void pwd_handling(command_t *cmd);
 void pasv_handling(command_t *cmd);
 void del_handling(command_t *cmd);
 void retr_handling(command_t *cmd);
+void list_handling(command_t *cmd);
+void stor_handling(command_t *cmd);
 
 #endif

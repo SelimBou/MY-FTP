@@ -52,6 +52,7 @@ static int accept_data_connection(command_t *cmd)
         return -1;
     }
     if (data_socket < 0) {
+        perror("accept");
         write(cmd->fds[cmd->i].fd, "425 Can't open data connection.\r\n", 33);
         return -1;
     }
@@ -60,14 +61,22 @@ static int accept_data_connection(command_t *cmd)
 
 static void send_directory_listing(command_t *cmd, int data_socket)
 {
-    struct dirent *entry = readdir(opendir(cmd->clients[cmd->i].cwd));
+    struct dirent *entry;
     char file_info[1024];
 
+    cmd->clients[cmd->i].dir = opendir(cmd->clients[cmd->i].cwd);
+    if (!cmd->clients[cmd->i].dir) {
+        perror("Error opening directory");
+        return;
+    }
+    entry = readdir(cmd->clients[cmd->i].dir);
     while (entry != NULL) {
         snprintf(file_info, sizeof(file_info), "%s\r\n", entry->d_name);
         write(data_socket, file_info, strlen(file_info));
-        entry = readdir(cmd->clients[cmd->i].cwd);
+        entry = readdir(cmd->clients[cmd->i].dir);
     }
+    closedir(cmd->clients[cmd->i].dir);
+    cmd->clients[cmd->i].dir = NULL;
 }
 
 void list_handling(command_t *cmd)
