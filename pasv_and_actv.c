@@ -57,7 +57,7 @@ static void send_pasv_response(int fd, const char *ip_str, int p1, int p2)
     write(fd, response, strlen(response));
 }
 
-static int check_data_connection(command_t *cmd, int sockfd)
+int check_data_connection(command_t *cmd, int sockfd)
 {
     if (sockfd < 0) {
         write(cmd->fds[cmd->i].fd, "425 Cannot open data connection\r\n", 33);
@@ -90,65 +90,48 @@ void pasv_handling(command_t *cmd)
     cmd->clients[cmd->i].pasv_conn.is_active = true;
 }
 
-int open_data_connection(command_t *cmd)
+static port_arguments_t parse_port_arguments(char *args)
 {
-    int data_socket = accept(cmd->clients[cmd->i].pasv_conn.data_socket,
-        NULL, NULL);
+    port_arguments_t result;
+    int h1;
+    int h2;
+    int h3;
+    int h4;
+    int p1;
+    int p2;
 
-    if (data_socket < 0) {
-        perror("STOR: Error accepting data connection");
-        write(cmd->fds[cmd->i].fd, "425 Can't open data connection.\r\n", 33);
+    if (sscanf(args, "%d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2) != 6) {
+        result.success = false;
+        return result;
     }
-    return data_socket;
+    result.client_addr.sin_family = AF_INET;
+    result.client_addr.sin_port = htons((p1 << 8) + p2);
+    result.client_addr.sin_addr.s_addr = htonl((h1 << 24) | (h2 << 16)
+        | (h3 << 8) | h4);
+    result.success = true;
+    return result;
 }
 
-void receive_file(command_t *cmd, int data_socket, int file_fd)
+void port_handling(command_t *cmd)
 {
-    char buffer[BUFFER_SIZE];
-    ssize_t bytes_read;
+    char *args = cmd->buffer + 5;
+    port_arguments_t parsed_args;
+    int data_socket = socket(AF_INET, SOCK_STREAM, 0);
 
-    write(cmd->fds[cmd->i].fd, "150 Opening data connection.\r\n", 30);
-    bytes_read = read(data_socket, buffer, sizeof(buffer));
-    while (bytes_read > 0) {
-        write(file_fd, buffer, bytes_read);
-        bytes_read = read(data_socket, buffer, sizeof(buffer));
-    }
-    close(data_socket);
-    close(file_fd);
-    write(cmd->fds[cmd->i].fd, "226 Transfer complete.\r\n", 24);
-}
-
-static int check_stor_errors(command_t *cmd, char *filename)
-{
-    if (!filename) {
-        write(cmd->fds[cmd->i].fd, "501 Syntax error in parameters.\r\n", 32);
-        return 1;
-    }
-    if (!cmd->clients[cmd->i].pasv_conn.is_active) {
-        write(cmd->fds[cmd->i].fd, "425 Use PASV first.\r\n", 21);
-        return 1;
-    }
-    return 0;
-}
-
-void stor_handling(command_t *cmd)
-{
-    char *filename = strtok(NULL, " \r\n");
-    int file_fd;
-    int data_socket;
-
-    if (check_stor_errors(cmd, filename)) {
+    parsed_args = parse_port_arguments(args);
+    if (!parsed_args.success) {
+        write(cmd->fds[cmd->i].fd, "501 Syntax error in parameters.\r\n", 33);
         return;
     }
-    file_fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    if (file_fd < 0) {
-        perror("STOR: Error opening file");
-        write(cmd->fds[cmd->i].fd, "550 Cannot create file.\r\n", 25);
+    if (check_data_connection(cmd, data_socket) < 0)
+        return;
+    if (connect(data_socket, (struct sockaddr *)&parsed_args.client_addr,
+        sizeof(parsed_args.client_addr)) < 0) {
+        close(data_socket);
+        write(cmd->fds[cmd->i].fd, "425 Can't open data connection.\r\n", 32);
         return;
     }
-    data_socket = open_data_connection(cmd);
-    if (data_socket >= 0)
-        receive_file(cmd, data_socket, file_fd);
-    else
-        close(file_fd);
+    cmd->clients[cmd->i].port_conn.data_socket = data_socket;
+    cmd->clients[cmd->i].port_conn.is_active = true;
+    write(cmd->fds[cmd->i].fd, "200 PORT command successful.\r\n", 30);
 }

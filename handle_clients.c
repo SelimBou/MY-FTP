@@ -85,8 +85,8 @@ void init_commands(command_entry_t *commands)
     commands[8] = (command_entry_t){"DELE", del_handling};
     commands[9] = (command_entry_t){"RETR", retr_handling};
     commands[10] = (command_entry_t){"LIST", list_handling};
-    commands[11] = (command_entry_t){"STOR", stor_handling};
-    commands[12] = (command_entry_t){"PASV", pasv_handling};
+    commands[11] = (command_entry_t){"PASV", pasv_handling};
+    commands[12] = (command_entry_t){"PORT", port_handling};
     commands[13] = (command_entry_t){NULL, NULL};
 }
 

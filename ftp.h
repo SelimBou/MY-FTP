@@ -14,6 +14,7 @@
     #include <ctype.h>
     #include <sys/socket.h>
     #include <unistd.h>
+    #include <sys/stat.h>
     #include <arpa/inet.h>
     #include <stdio.h>
     #include <fcntl.h>
@@ -32,13 +33,23 @@ typedef struct {
     bool is_active;
 } pasv_connection_t;
 
+typedef struct {
+    int data_socket;
+    bool is_active;
+} port_connection_t;
+
+typedef struct {
+    struct sockaddr_in client_addr;
+    bool success;
+} port_arguments_t;
+
 typedef struct client {
     int fd;
     int is_authenticated;
     char cwd[BUFFER_SIZE];
     char username[BUFFER_SIZE];
     pasv_connection_t pasv_conn;
-    DIR *dir;
+    port_connection_t port_conn;
 } client_t;
 
 typedef struct command_s {
@@ -73,6 +84,8 @@ void pasv_handling(command_t *cmd);
 void del_handling(command_t *cmd);
 void retr_handling(command_t *cmd);
 void list_handling(command_t *cmd);
-void stor_handling(command_t *cmd);
+void port_handling(command_t *cmd);
+
+int check_data_connection(command_t *cmd, int sockfd);
 
 #endif

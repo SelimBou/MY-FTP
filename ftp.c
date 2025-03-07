@@ -81,6 +81,13 @@ void my_ftp(char *port, char *path)
     close(server_socket);
 }
 
+static int check_directory_exists(const char *path)
+{
+    struct stat st;
+
+    return (stat(path, &st) == 0 && S_ISDIR(st.st_mode));
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 2 && strcmp(argv[1], "-help") == 0) {
@@ -89,6 +96,10 @@ int main(int argc, char **argv)
     }
     if (argc != 3) {
         print_help();
+        return 84;
+    }
+    if (!check_directory_exists(argv[2])) {
+        write(2, "Error: Directory does not exist.\n", 34);
         return 84;
     }
     my_ftp(argv[1], argv[2]);

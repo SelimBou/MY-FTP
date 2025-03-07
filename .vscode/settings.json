@@ -2,6 +2,7 @@
   "files.associations": {
     "client.C": "cpp",
     "ftp.h": "c",
-    "*.tcc": "c"
+    "*.tcc": "c",
+    "time.h": "c"
   }
 }
