@@ -88,14 +88,13 @@ static void send_directory_listing(command_t *cmd, int data_socket)
     DIR *dir = opendir(cmd->clients[cmd->i].cwd);
 
     if (!dir) {
+        perror("opendir");
         write(cmd->fds[cmd->i].fd, "550 Failed to open directory.\r\n", 32);
         return;
     }
+    write(cmd->fds[cmd->i].fd, "150 Here comes directory listing.\r\n", 35);
     entry = readdir(dir);
     while (entry != NULL) {
-        if (strcmp(entry->d_name, ".") == 0 ||
-            strcmp(entry->d_name, "..") == 0)
-            continue;
         snprintf(file_info, sizeof(file_info), "%s\r\n", entry->d_name);
         if (write(data_socket, file_info, strlen(file_info)) < 0)
             break;
@@ -108,12 +107,14 @@ void list_handling(command_t *cmd)
 {
     int data_socket;
 
+    if (strchr(cmd->buffer, ' ') != NULL) {
+        write(cmd->fds[cmd->i].fd, "501 Error : No arguments needed.\r\n", 34);
+        return;
+    }
     data_socket = accept_data_connection(cmd);
     if (data_socket < 0) {
         return;
     }
-    write(cmd->fds[cmd->i].fd, "150 Here comes the directory listing.\r\n",
-        38);
     send_directory_listing(cmd, data_socket);
     close(data_socket);
     write(cmd->fds[cmd->i].fd, "226 Directory send OK.\r\n", 24);
