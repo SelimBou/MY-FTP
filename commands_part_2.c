@@ -20,45 +20,6 @@ void help_handling(command_t *cmd)
     write(cmd->fds[cmd->i].fd, help_msg, strlen(help_msg));
 }
 
-static char *clean_path(char *path)
-{
-    char *end;
-
-    while (*path == ' ')
-        path++;
-    end = strchr(path, '\r');
-    if (end)
-        *end = '\0';
-    end = strchr(path, '\n');
-    if (end)
-        *end = '\0';
-    return path;
-}
-
-void del_handling(command_t *cmd)
-{
-    char *args = cmd->buffer + 4;
-    char *cleaned_path = clean_path(args);
-
-    if (*cleaned_path == '\0') {
-        write(cmd->fds[cmd->i].fd, "501 Syntax error in parameters.\r\n", 33);
-        return;
-    }
-    if (access(cleaned_path, F_OK) != 0) {
-        write(cmd->fds[cmd->i].fd, "550 File not found.\r\n", 21);
-        return;
-    }
-    if (access(cleaned_path, W_OK) != 0) {
-        write(cmd->fds[cmd->i].fd, "550 Access denied.\r\n", 20);
-        return;
-    }
-    if (remove(cleaned_path) == 0) {
-        write(cmd->fds[cmd->i].fd, "250 file action okay, completed.\r\n", 34);
-    } else {
-        write(cmd->fds[cmd->i].fd, "550 Could not delete file.\r\n", 28);
-    }
-}
-
 static int accept_data_connection(command_t *cmd)
 {
     int data_socket;

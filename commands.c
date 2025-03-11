@@ -96,28 +96,54 @@ static void send_error_response(int fd, const char *message)
     write(fd, message, strlen(message));
 }
 
-void cwd_handling(command_t *cmd)
+static void resolve_requested_path(command_t *cmd,
+    char *buffer_ptr, char *requested_path)
 {
-    char current_path[PATH_MAX];
-    char *buffer_ptr = cmd->buffer;
-
     while (*buffer_ptr == ' ')
         buffer_ptr++;
-    if (*buffer_ptr == '\0')
-        return send_error_response(cmd->fds[cmd->i].fd,
+    if (*buffer_ptr == '\0') {
+        send_error_response(cmd->fds[cmd->i].fd,
             "501 Syntax error in parameters.\r\n");
-    if (!getcwd(current_path, PATH_MAX))
-        return send_error_response(cmd->fds[cmd->i].fd,
-            "550 Retrieving directory failed.\r\n");
-    if (strcmp(current_path, buffer_ptr) == 0)
-        return send_error_response(cmd->fds[cmd->i].fd,
-            "250 Already in the directory.\r\n");
-    if (chdir(buffer_ptr) == 0) {
-        write(cmd->fds[cmd->i].fd, "250 Requested action completed.\r\n", 33);
-    } else {
-        return send_error_response(cmd->fds[cmd->i].fd,
-            "550 Failed to change directory.\r\n");
+        return;
     }
+    if (buffer_ptr[0] == '/') {
+        snprintf(requested_path, PATH_MAX, "%s", buffer_ptr);
+    } else {
+        snprintf(requested_path, PATH_MAX, "%s/%s",
+            cmd->clients[cmd->i].cwd, buffer_ptr);
+    }
+}
+
+static void change_directory(command_t *cmd, char *requested_path)
+{
+    char new_path[PATH_MAX];
+
+    if (access(requested_path, F_OK) != 0) {
+        send_error_response(cmd->fds[cmd->i].fd,
+            "550 Directory not found.\r\n");
+        return;
+    }
+    if (chdir(requested_path) != 0) {
+        send_error_response(cmd->fds[cmd->i].fd,
+            "550 Failed to change directory.\r\n");
+        return;
+    }
+    if (!getcwd(new_path, sizeof(new_path))) {
+        send_error_response(cmd->fds[cmd->i].fd,
+            "550 Retrieving directory failed.\r\n");
+        return;
+    }
+    snprintf(cmd->clients[cmd->i].cwd, PATH_MAX, "%s", new_path);
+    send_error_response(cmd->fds[cmd->i].fd,
+        "250 Directory successfully changed.\r\n");
+}
+
+void cwd_handling(command_t *cmd)
+{
+    char requested_path[PATH_MAX];
+
+    resolve_requested_path(cmd, cmd->buffer + 4, requested_path);
+    change_directory(cmd, requested_path);
 }
 
 void pwd_handling(command_t *cmd)
