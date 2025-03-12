@@ -107,7 +107,7 @@ static void resolve_requested_path(command_t *cmd,
         return;
     }
     if (buffer_ptr[0] == '/') {
-        snprintf(requested_path, PATH_MAX, "%s", buffer_ptr);
+        snprintf(requested_path, PATH_MAX, "%s%s", cmd->base_dir, buffer_ptr);
     } else {
         snprintf(requested_path, PATH_MAX, "%s/%s",
             cmd->clients[cmd->i].cwd, buffer_ptr);

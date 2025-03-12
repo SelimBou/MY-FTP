@@ -22,10 +22,8 @@
     #include <stdbool.h>
     #include <string.h>
     #include <poll.h>
-    #include <unistd.h>
     #include <limits.h>
     #include <dirent.h>
-
 
 typedef struct {
     int data_socket;
@@ -46,7 +44,7 @@ typedef struct {
 typedef struct client {
     int fd;
     int is_authenticated;
-    char cwd[BUFFER_SIZE];
+    char cwd[PATH_MAX];
     char username[BUFFER_SIZE];
     pasv_connection_t pasv_conn;
     port_connection_t port_conn;
@@ -59,6 +57,7 @@ typedef struct command_s {
     int i;
     char buffer[BUFFER_SIZE];
     char path[PATH_MAX];
+    char base_dir[PATH_MAX];
 } command_t;
 
 typedef void (*command_handler_t)(command_t *);

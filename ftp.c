@@ -38,24 +38,20 @@ void init_server(int *server_socket, struct sockaddr_in *server_addr,
 }
 
 static void check_client_activity(struct pollfd *fds, client_t *clients,
-    int *nfds, char *path)
+    int *nfds, command_t *cmd)
 {
-    command_t cmd;
-
     for (int i = 1; i < *nfds; i++) {
         if (fds[i].revents & POLLIN) {
-            cmd.fds = fds;
-            cmd.clients = clients;
-            cmd.nfds = nfds;
-            cmd.i = i;
-            strncpy(cmd.path, path, PATH_MAX - 1);
-            cmd.path[PATH_MAX - 1] = '\0';
-            process_client_message(&cmd);
+            cmd->fds = fds;
+            cmd->clients = clients;
+            cmd->nfds = nfds;
+            cmd->i = i;
+            process_client_message(cmd);
         }
     }
 }
 
-void handle_clients(int server_socket, char *path)
+void handle_clients(int server_socket, command_t *cmd)
 {
     struct pollfd fds[MAX_CLIENTS + 1];
     client_t clients[MAX_CLIENTS + 1];
@@ -67,17 +63,17 @@ void handle_clients(int server_socket, char *path)
         if (fds[0].revents & POLLIN) {
             accept_new_client(server_socket, clients, fds, &nfds);
         }
-        check_client_activity(fds, clients, &nfds, path);
+        check_client_activity(fds, clients, &nfds, cmd);
     }
 }
 
-void my_ftp(char *port, char *path)
+void my_ftp(char *port, command_t *cmd)
 {
     int server_socket;
     struct sockaddr_in server_addr;
 
     init_server(&server_socket, &server_addr, port);
-    handle_clients(server_socket, path);
+    handle_clients(server_socket, cmd);
     close(server_socket);
 }
 
@@ -90,6 +86,8 @@ static int check_directory_exists(const char *path)
 
 int main(int argc, char **argv)
 {
+    command_t cmd;
+
     if (argc == 2 && strcmp(argv[1], "-help") == 0) {
         print_help();
         return 0;
@@ -102,6 +100,8 @@ int main(int argc, char **argv)
         write(2, "Error: Directory does not exist.\n", 34);
         return 84;
     }
-    my_ftp(argv[1], argv[2]);
+    strncpy(cmd.base_dir, argv[2], PATH_MAX - 1);
+    cmd.base_dir[PATH_MAX - 1] = '\0';
+    my_ftp(argv[1], &cmd);
     return 0;
 }

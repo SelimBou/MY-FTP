@@ -46,7 +46,7 @@ static void send_directory_listing(command_t *cmd, int data_socket)
 {
     struct dirent *entry;
     char file_info[256];
-    DIR *dir = opendir(cmd->clients[cmd->i].cwd);
+    DIR *dir = opendir(cmd->base_dir);
 
     if (!dir) {
         perror("opendir");
