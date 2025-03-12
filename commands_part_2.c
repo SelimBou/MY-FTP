@@ -90,7 +90,7 @@ void list_handling(command_t *cmd)
 
 static int validate_retr_arguments(command_t *cmd, char **args)
 {
-    *args = cmd->buffer + 4;
+    *args = cmd->buffer + 5;
     if (!cmd->clients[cmd->i].pasv_conn.is_active &&
         !cmd->clients[cmd->i].port_conn.is_active) {
         write(cmd->fds[cmd->i].fd, "425 Use PASV or PORT first.\r\n", 28);
