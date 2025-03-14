@@ -7,15 +7,15 @@
 
 #include "ftp.h"
 
-static int can_delete_file(char *cleaned_path, int client_fd)
+static int can_delete_file(const char *full_path, int client_fd)
 {
     struct stat path_stat;
 
-    if (access(cleaned_path, F_OK) != 0) {
+    if (access(full_path, F_OK) != 0) {
         write(client_fd, "550 File not found.\r\n", 21);
         return 0;
     }
-    if (stat(cleaned_path, &path_stat) != 0) {
+    if (stat(full_path, &path_stat) != 0) {
         write(client_fd, "550 Could not retrieve file info.\r\n", 32);
         return 0;
     }
@@ -23,7 +23,7 @@ static int can_delete_file(char *cleaned_path, int client_fd)
         write(client_fd, "550 Cannot delete a directory.\r\n", 32);
         return 0;
     }
-    if (access(cleaned_path, W_OK) != 0) {
+    if (access(full_path, W_OK) != 0) {
         write(client_fd, "550 Access denied.\r\n", 20);
         return 0;
     }
@@ -32,16 +32,19 @@ static int can_delete_file(char *cleaned_path, int client_fd)
 
 static char *clean_path(char *path)
 {
-    char *end;
+    char *src = path;
+    char *dest = path;
 
-    while (*path == ' ')
-        path++;
-    end = strchr(path, '\r');
-    if (end)
-        *end = '\0';
-    end = strchr(path, '\n');
-    if (end)
-        *end = '\0';
+    while (isspace((unsigned char)*src))
+        src++;
+    while (*src != '\r' && *src != '\n' && *src != '\0') {
+        if (!isspace((unsigned char)*src)) {
+            *dest = *src;
+            dest++;
+        }
+        src++;
+    }
+    *dest = '\0';
     return path;
 }
 
@@ -49,18 +52,19 @@ void del_handling(command_t *cmd)
 {
     char *args = cmd->buffer + 4;
     char *cleaned_path = clean_path(args);
+    char full_path[PATH_MAX];
 
+    snprintf(full_path, sizeof(full_path), "%s/%s", cmd->clients[cmd->i].cwd,
+        cleaned_path);
     if (*cleaned_path == '\0') {
         write(cmd->fds[cmd->i].fd, "501 Syntax error in parameters.\r\n", 33);
         return;
     }
-    if (!can_delete_file(cleaned_path, cmd->fds[cmd->i].fd))
+    if (!can_delete_file(full_path, cmd->fds[cmd->i].fd))
         return;
-    printf("%s\n", cleaned_path);
-    if (remove(cleaned_path) == 0) {
+    if (remove(full_path) == 0) {
         write(cmd->fds[cmd->i].fd, "250 File action okay, completed.\r\n", 34);
     } else {
-        perror("remove");
         write(cmd->fds[cmd->i].fd, "550 Could not delete file.\r\n", 28);
     }
 }
