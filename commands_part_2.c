@@ -87,3 +87,59 @@ void list_handling(command_t *cmd)
         cmd->clients[cmd->i].port_conn.is_active = false;
     }
 }
+
+static int validate_retr_arguments(command_t *cmd, char **args)
+{
+    *args = cmd->buffer + 4;
+    while (**args == ' ')
+        (*args)++;
+    if (**args == '\0' || **args == '\r' || **args == '\n') {
+        write(cmd->fds[cmd->i].fd, "501 Syntax error in parameters.\r\n", 33);
+        return -1;
+    }
+    return 0;
+}
+
+static void send_file_content(command_t *cmd, int data_socket, char *args)
+{
+    int file_fd = open(args, O_RDONLY);
+    char buffer[BUFFER_SIZE];
+    ssize_t bytes_read;
+
+    if (file_fd < 0) {
+        write(cmd->fds[cmd->i].fd, "550 File not found.\r\n", 21);
+        close(data_socket);
+        return;
+    }
+    write(cmd->fds[cmd->i].fd, "150 Opening data connection.\r\n", 30);
+    bytes_read = read(file_fd, buffer, BUFFER_SIZE);
+    while (bytes_read > 0) {
+        write(data_socket, buffer, bytes_read);
+        bytes_read = read(file_fd, buffer, BUFFER_SIZE);
+    }
+    close(file_fd);
+    close(data_socket);
+    write(cmd->fds[cmd->i].fd, "226 Transfer complete.\r\n", 24);
+}
+
+void retr_handling(command_t *cmd)
+{
+    char *args;
+    int data_socket;
+
+    if (validate_retr_arguments(cmd, &args) < 0) {
+        return;
+    }
+    data_socket = accept_data_connection(cmd);
+    if (data_socket < 0) {
+        return;
+    }
+    send_file_content(cmd, data_socket, args);
+    if (cmd->clients[cmd->i].pasv_conn.is_active) {
+        close(cmd->clients[cmd->i].pasv_conn.data_socket);
+        cmd->clients[cmd->i].pasv_conn.is_active = false;
+    } else {
+        close(cmd->clients[cmd->i].port_conn.data_socket);
+        cmd->clients[cmd->i].port_conn.is_active = false;
+    }
+}
