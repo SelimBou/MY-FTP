@@ -5,7 +5,7 @@
 ** dele_handling.c
 */
 
-#include "ftp.h"
+#include "../ftp.h"
 
 static int can_delete_file(const char *full_path, int client_fd)
 {

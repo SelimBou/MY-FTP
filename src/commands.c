@@ -5,7 +5,7 @@
 ** commands.c
 */
 
-#include "ftp.h"
+#include "../ftp.h"
 
 static void handle_anonymous_login(command_t *cmd, char *buffer_ptr)
 {

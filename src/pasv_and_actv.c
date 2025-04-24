@@ -5,7 +5,7 @@
 ** pasv_and_actv.c
 */
 
-#include "ftp.h"
+#include "../ftp.h"
 
 static int check_socket_creation(int sockfd)
 {

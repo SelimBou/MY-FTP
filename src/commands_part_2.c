@@ -5,7 +5,7 @@
 ** check_command.c
 */
 
-#include "ftp.h"
+#include "../ftp.h"
 
 void noop_handling(command_t *cmd)
 {

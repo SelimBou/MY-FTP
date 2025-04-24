@@ -5,7 +5,7 @@
 ** main.c
 */
 
-#include "ftp.h"
+#include "../ftp.h"
 
 void print_help(void)
 {

@@ -5,12 +5,12 @@
 ## Makefile
 ##
 
-SRC	=	ftp.c \
-		handle_clients.c \
-		commands.c \
-		commands_part_2.c \
-		pasv_and_actv.c \
-		dele_handling.c
+SRC	=	src/ftp.c \
+		src/handle_clients.c \
+		src/commands.c \
+		src/commands_part_2.c \
+		src/pasv_and_actv.c \
+		src/dele_handling.c
 
 OBJ	=	$(SRC:.c=.o)
 

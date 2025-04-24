@@ -5,7 +5,7 @@
 ** handle_clients.c
 */
 
-#include "ftp.h"
+#include "../ftp.h"
 
 void add_server_socket(struct pollfd *fds, int server_socket)
 {
